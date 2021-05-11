@@ -41,6 +41,8 @@
 #include "prims/nativeLookup.hpp"
 #include "runtime/sharedRuntime.hpp"
 
+#include "opto/idealKit.hpp" //cgmin stack
+
 void trace_type_profile(Compile* C, ciMethod *method, int depth, int bci, ciMethod *prof_method, ciKlass *prof_klass, int site_count, int receiver_count) {
   if (TraceTypeProfile || C->print_inlining()) {
     outputStream* out = tty;
@@ -590,6 +592,27 @@ void Parse::do_call() {
   // because exceptions don't return to the call site.)
   profile_call(receiver);
 
+//cgmin stack
+bool track;
+track = true;
+track = !cg->is_inline() && Universe::gd.test_m(method()->get_Method(),bci());
+//track = false;
+if (track)
+{
+	IdealKit ik(this, true, false);
+	Node* th = ik.thread();
+	Node* tt = ik.top();
+	Node* fsp = ik.AddP(tt, th, longcon(in_bytes(JavaThread::fs_offset())));
+	Node* fsv = ik.load(ik.ctrl(), fsp, TypeInt::INT, T_INT, Compile::AliasIdxRaw);
+	//Node* fsv2 = ik.AddI(fsv, intcon(1)); // depth
+	Node* fsv2 = ik.AddI(fsv, intcon(bci())); // bci
+	// need hash value
+
+	ik.store(ik.ctrl(), fsp, fsv2, T_INT, Compile::AliasIdxRaw,MemNode::unordered);
+
+	final_sync(ik);
+}
+
   JVMState* new_jvms = cg->generate(jvms);
   if (new_jvms == NULL) {
     // When inlining attempt fails (e.g., too many arguments),
@@ -708,6 +731,23 @@ void Parse::do_call() {
       record_profiled_return_for_speculation();
     }
   }
+
+//cgmin stack
+if (track && !stopped())
+{
+	IdealKit ik(this, true, false);
+	Node* th = ik.thread();
+	Node* tt = ik.top();
+	Node* fsp = ik.AddP(tt, th, longcon(in_bytes(JavaThread::fs_offset())));
+	Node* fsv = ik.load(ik.ctrl(), fsp, TypeInt::INT, T_INT, Compile::AliasIdxRaw);
+	//Node* fsv2 = ik.AddI(fsv, intcon(1)); // depth
+	Node* fsv2 = ik.SubI(fsv, intcon(bci())); // bci
+	// need hash value
+
+	ik.store(ik.ctrl(), fsp, fsv2, T_INT, Compile::AliasIdxRaw,MemNode::unordered);
+
+	final_sync(ik);
+}
 
   // Restart record of parsing work after possible inlining of call
 #ifndef PRODUCT

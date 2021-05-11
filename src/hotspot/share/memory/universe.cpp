@@ -164,6 +164,8 @@ NarrowPtrStruct Universe::_narrow_klass = { NULL, 0, true };
 address Universe::_narrow_ptrs_base;
 uint64_t Universe::_narrow_klass_range = (uint64_t(max_juint)+1);
 
+GlobalData Universe::gd; //cgmin stack
+
 void Universe::basic_type_classes_do(void f(Klass*)) {
   f(boolArrayKlassObj());
   f(byteArrayKlassObj());

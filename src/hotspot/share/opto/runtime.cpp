@@ -1390,6 +1390,9 @@ address OptoRuntime::handle_exception_C(JavaThread* thread) {
 //
 // We are in Java not VM and in debug mode we have a NoHandleMark
 //
+
+	thread->exception_fs(); //cgmin stack
+
 #ifndef PRODUCT
   SharedRuntime::_find_handler_ctr++;          // find exception handler
 #endif

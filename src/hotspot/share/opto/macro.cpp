@@ -1769,10 +1769,30 @@ PhaseMacroExpand::initialize_object(AllocateNode* alloc,
   } else {
     mark_node = makecon(TypeRawPtr::make((address)markOopDesc::prototype()));
   }
+
+//cgmin stack mark_node OR fsp??
+/*
+  Node* fsv = make_load(control, rawmem, thraed, in_byte(JavaThread::fs_offset()), TypeInt::INT, T_INT);
+//  Node* fsv2 = LShiftINode(fsv,intcon(39)); // 31+1+4+1+2=39
+  Node* fsv2 = LShiftINode(fsv,intcon(7)); // 25 + 7 = 32
+  Node* mark_node2 = new (C) OrINode(fsv2,mark_node);
+  rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), mark_node2, T_ADDRESS);
+*/
   rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), mark_node, T_ADDRESS);
 
   rawmem = make_store(control, rawmem, object, oopDesc::klass_offset_in_bytes(), klass_node, T_METADATA);
   int header_size = alloc->minimum_header_size();  // conservatively small
+
+//cgmin stack need header method information
+// layout 64bit unused 25 bit
+
+// cut 32bit hash not good
+  /*
+  Node* fsv = make_load(control, rawmem, thraed, in_byte(JavaThread::fs_offset()), TypeInt::INT, T_INT);
+  rawmem = make_store(control, rawmem, object, oopDesc::mark_offset_in_bytes(), fsv,T_INT);
+*/
+  //offset??? T_INT???
+  //cgmin need check
 
   // Array length
   if (length != NULL) {         // Arrays need length field

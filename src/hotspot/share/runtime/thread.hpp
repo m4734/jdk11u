@@ -723,6 +723,9 @@ protected:
 
   static ByteSize allocated_bytes_offset()       { return byte_offset_of(Thread, _allocated_bytes); }
 
+volatile unsigned int fs;
+static ByteSize fs_offset() { return byte_offset_of(Thread,fs); } //cgmin stack
+
   JFR_ONLY(DEFINE_THREAD_LOCAL_OFFSET_JFR;)
 
  public:
@@ -752,6 +755,7 @@ protected:
   static void muxAcquire(volatile intptr_t * Lock, const char * Name);
   static void muxAcquireW(volatile intptr_t * Lock, ParkEvent * ev);
   static void muxRelease(volatile intptr_t * Lock);
+
 };
 
 // Inline implementation of Thread::current()
@@ -2038,6 +2042,10 @@ class JavaThread: public Thread {
   bool is_attaching_via_jni() const { return _jni_attach_state == _attaching_via_jni; }
   bool has_attached_via_jni() const { return is_attaching_via_jni() || _jni_attach_state == _attached_via_jni; }
   inline void set_done_attaching_via_jni();
+
+
+ public:
+  void exception_fs(); //cgmin stack
 };
 
 // Inline implementation of JavaThread::current

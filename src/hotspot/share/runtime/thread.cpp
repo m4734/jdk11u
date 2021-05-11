@@ -317,6 +317,24 @@ Thread::Thread() {
   if (barrier_set != NULL) {
     barrier_set->on_thread_create(this);
   }
+
+  //cgmin stack
+  fs = 0;
+}
+
+void JavaThread::exception_fs() //cgmin stack
+{
+	if (!has_last_Java_frame())
+		return;
+	RegisterMap reg_map(this);
+	javaVFrame* jvf = last_java_vframe(&reg_map);
+	if (jvf->is_compiled_frame() == false)
+		return;
+	if (Universe::gd.test_m(jvf->method(),jvf->bci()) == false)
+		return;
+	fs-=jvf->bci();
+
+	//need hash value
 }
 
 void Thread::initialize_thread_current() {

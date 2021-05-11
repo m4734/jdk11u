@@ -29,6 +29,8 @@
 #include "runtime/handles.hpp"
 #include "utilities/growableArray.hpp"
 
+#include "cgmin/GlobalData.hpp" //cgmin stack
+
 // Universe is a name space holding known system classes and objects in the VM.
 //
 // Loaded classes are accessible through the SystemDictionary.
@@ -533,6 +535,9 @@ class Universe: AllStatic {
 
   // Compiler support
   static int base_vtable_size()               { return _base_vtable_size; }
+
+ public:
+  static GlobalData gd; //cgmin
 };
 
 class DeferredObjAllocEvent : public CHeapObj<mtInternal> {
