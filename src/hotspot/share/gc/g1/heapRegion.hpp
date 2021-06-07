@@ -698,6 +698,13 @@ class HeapRegion: public G1ContiguousSpace {
 
   void verify_rem_set(VerifyOption vo, bool *failures) const;
   void verify_rem_set() const;
+
+ public: //cgmin region
+  unsigned long start_time,end_time,gc_time;
+  //start = region birth
+  //end = region die
+  //gc = sum of gc time
+  //end + gc - start
 };
 
 // HeapRegionClosure is used for iterating over regions.

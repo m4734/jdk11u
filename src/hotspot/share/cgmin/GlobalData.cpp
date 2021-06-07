@@ -9,3 +9,8 @@ int GlobalData::test_m(Method *m,int bci)
 		return 0;
 	return 1;
 }
+
+int GlobalData::hc_hash(int h,int c)
+{
+	return h + c;
+}

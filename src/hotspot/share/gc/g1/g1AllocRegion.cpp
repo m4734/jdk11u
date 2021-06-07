@@ -390,3 +390,27 @@ HeapRegion* OldGCAllocRegion::release() {
   }
   return G1AllocRegion::release();
 }
+
+
+void G1AllocRegion::set_start_time(unsigned long time) //cgmin region
+{
+	_alloc_region->start_time = time;
+}
+void G1AllocRegion::set_end_time(unsigned long time)
+{
+	_alloc_region->end_time = time;
+}
+void G1AllocRegion::add_gc_time(unsigned long time)
+{
+	_alloc_region->gc_time += time;
+}
+unsigned long G1AllocRegion::get_start_time()
+{
+	return _alloc_region->start_time;
+}
+unsigned long G1AllocRegion::get_end_time()
+{
+	return _alloc_region->end_time + _alloc_region->gc_time; // confusing
+}
+
+

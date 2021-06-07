@@ -1412,6 +1412,10 @@ public:
 
 private:
   size_t _max_heap_capacity;
+
+public: //cgmin region
+HeapWord* find_time_region_and_try_allocate(HeapRegion** region,size_t min_word_size,size_t desired_word_size, size_t* actual_word_size,unsigned long time);
+
 };
 
 class G1ParEvacuateFollowersClosure : public VoidClosure {

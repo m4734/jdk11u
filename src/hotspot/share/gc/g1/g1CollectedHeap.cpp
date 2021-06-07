@@ -969,6 +969,30 @@ HeapWord* G1CollectedHeap::attempt_allocation_at_safepoint(size_t word_size,
 
   ShouldNotReachHere();
 }
+/*
+class FindTimeRegionAndTryAllocateClosure: public HeapRegionClosure { //cgmin region
+public:
+  FindTimeRegionAndTryAllocateClosure(unsigned long time, size_t word_size, HeapWord** result_word,HeapRegion** result_region) : _time(time), _word_size(word_size), _result_word(result_word), _result_region(result_region) { *_result_word = NULL; *_result_region = NULL;}
+
+  unsigned long _time;
+  size_t _word_size;
+  HeapWord** _result_word;
+  HeapRegion** _result_region;
+
+  bool do_heap_region(HeapRegion* r) {
+	  if (r->start_time <= time && r->end_time + r->gc_time >= time)
+	  {
+		  *_result_word = r->allocate(_word_size);
+		  if (*_result_word != NULL)
+		  {
+			*_result_region = r;
+			  return true;
+		  }
+	  }
+    return false;
+  }
+};
+*/
 
 class PostCompactionPrinterClosure: public HeapRegionClosure {
 private:

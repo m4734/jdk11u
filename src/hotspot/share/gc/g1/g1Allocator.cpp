@@ -33,13 +33,17 @@
 #include "gc/g1/heapRegionType.hpp"
 #include "utilities/align.hpp"
 
+#include "memory/allocation.hpp" //cgmin region
+
 G1Allocator::G1Allocator(G1CollectedHeap* heap) :
   _g1h(heap),
   _survivor_is_full(false),
   _old_is_full(false),
   _retained_old_gc_alloc_region(NULL),
   _survivor_gc_alloc_region(heap->alloc_buffer_stats(InCSetState::Young)),
-  _old_gc_alloc_region(heap->alloc_buffer_stats(InCSetState::Old)) {
+  _old_gc_alloc_region(heap->alloc_buffer_stats(InCSetState::Old))
+,tarlc(0) //cgmin region
+{ 
 }
 
 void G1Allocator::init_mutator_alloc_region() {
@@ -230,6 +234,106 @@ HeapWord* G1Allocator::old_attempt_allocation(size_t min_word_size,
   }
   return result;
 }
+
+HeapWord* G1Allocator::time_attempt_allocation(size_t min_word_size,
+                                                   size_t desired_word_size,
+                                                   size_t* actual_word_size, unsigned long time) { //cgmin region
+  assert(!_g1h->is_humongous(desired_word_size),
+         "we should not be seeing humongous-size allocations in this path");
+
+  HeapWord* result;
+
+  int i;
+  for (i=0;i<tarlc;i++) // it's scan and not good need change
+  {
+	  if (time_alloc_region_list[i]->get_start_time() <= time && time_alloc_region_list[i]->get_end_time() >= time) 
+	  {
+		  result = time_alloc_region_list[i]->attempt_allocation(min_word_size,desired_word_size,actual_word_size);
+		  if (result == NULL && !survivor_is_full())
+		  {
+    MutexLockerEx x(FreeList_lock, Mutex::_no_safepoint_check_flag);
+    result = time_alloc_region_list[i]->attempt_allocation(min_word_size,
+                                                                   desired_word_size,
+                                                                   actual_word_size); // is not locked
+    if (result == NULL) {
+      set_survivor_full();
+    }
+  if (result != NULL) {
+    _g1h->dirty_young_block(result, *actual_word_size);
+  }
+if (result != NULL)
+	return result;
+		  }
+	  }
+  }
+
+
+// we need new time region
+
+//time_alloc_region_list[tarlc] = new(ResourceObj::C_HEAP, mtGC) TimeGCAllocRegion(NULL); // new ???
+//time_alloc_region_list[tarlc] = new TimeGCAllocRegion(NULL); // new ???
+  time_alloc_region_list[tarlc] = NEW_RESOURCE_OBJ(TimeGCAllocRegion);
+
+//result = time_alloc_region_list[tarlc].allocate_existing_time_region(word_size,time);
+HeapRegion* result_region;
+result = _g1h->find_time_region_and_try_allocate(&result_region,min_word_size,desired_word_size,actual_word_size,time);
+//		time_alloc_region_list[tarlc]._alloc_region,word_size,time); // find time region and alloc
+if (result != NULL)
+{
+	/*
+	if (result_region == NULL)
+		printf("???\n");
+	else
+	*/
+time_alloc_region_list[tarlc]->set(result_region);
+	tarlc++;
+	    _g1h->dirty_young_block(result, *actual_word_size);
+	    return result; // region found and allocated
+}
+// no region need new one
+//result = time_alloc_region_list[tarlc]->new_alloc_region_and_allocate(desired_word_size,true); // make new region and alloc
+result = time_alloc_region_list[tarlc]->attempt_allocation_force(desired_word_size);
+if (result != NULL)
+{
+	    _g1h->dirty_young_block(result, *actual_word_size);
+// need time calc
+time_alloc_region_list[tarlc]->set_start_time(Universe::gd.now); // now
+time_alloc_region_list[tarlc]->set_end_time(Universe::gd.now+Universe::gd.minor_GC_interval); // now + minor GC interval
+
+//time_alloc_region_list[tarlc].min_time = Universe::gd.now;
+//time_alloc_region_list[tarlc].max_time = Universe::gd.
+
+tarlc++;
+return result;
+}
+//	delete(time_alloc_region_list[tarlc]);
+FreeHeap(time_alloc_region_list[tarlc]);
+	return NULL; //fail can't alloc?? OOM?
+//		  result = time_alloc_region_list[i]->attempt_allocation(min_word_size,desired_word_size,actual_word_size);
+
+
+/*
+  HeapWord* result = survivor_gc_alloc_region()->attempt_allocation(min_word_size,
+                                                                    desired_word_size,
+                                                                    actual_word_size);
+  if (result == NULL && !survivor_is_full()) {
+    MutexLockerEx x(FreeList_lock, Mutex::_no_safepoint_check_flag);
+    result = survivor_gc_alloc_region()->attempt_allocation_locked(min_word_size,
+                                                                   desired_word_size,
+                                                                   actual_word_size);
+    if (result == NULL) {
+      set_survivor_full();
+    }
+  }
+  */
+	/*
+  if (result != NULL) {
+    _g1h->dirty_young_block(result, *actual_word_size);
+  }
+  return result;
+  */
+}
+
 
 uint G1PLABAllocator::calc_survivor_alignment_bytes() {
   assert(SurvivorAlignmentInBytes >= ObjectAlignmentInBytes, "sanity");

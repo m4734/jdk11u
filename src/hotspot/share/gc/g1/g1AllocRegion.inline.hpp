@@ -143,4 +143,13 @@ inline HeapWord* MutatorAllocRegion::attempt_retained_allocation(size_t min_word
   return NULL;
 }
 
+// abandoned
+/*
+inline HeapWord* TimeAllocRegion::allocate_existing_time_region(size_t word_size, unsigned long time) //cgmin region size?
+{
+
+	_g1h->find_time_region_and_try_allocate(word_size,time);
+
+}
+*/
 #endif // SHARE_VM_GC_G1_G1ALLOCREGION_INLINE_HPP

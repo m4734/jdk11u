@@ -276,4 +276,45 @@ inline void G1CollectedHeap::set_humongous_is_live(oop obj) {
   }
 }
 
+class FindTimeRegionAndTryAllocateClosure: public HeapRegionClosure { //cgmin region
+public:
+  FindTimeRegionAndTryAllocateClosure(unsigned long time, size_t min_word_size, size_t desired_word_size, size_t* actual_word_size, HeapWord** result_word,HeapRegion** result_region) : _time(time), _min_word_size(min_word_size), _desired_word_size(desired_word_size), _actual_word_size(actual_word_size), _result_word(result_word), _result_region(result_region) { *_result_word = NULL; *_result_region = NULL;}
+
+  unsigned long _time;
+  size_t _min_word_size,_desired_word_size;
+  size_t* _actual_word_size;
+  HeapWord** _result_word;
+  HeapRegion** _result_region;
+
+  bool do_heap_region(HeapRegion* r) {
+	  if (r->start_time <= _time && r->end_time + r->gc_time >= _time)
+	  {
+//		  *_result_word = r->allocate(size_t(_min_word_size),size_t(_desired_word_size),(size_t*)(_actual_word_size));
+//		  *_result_word = r->allocate(size_t(_min_word_size),size_t(_desired_word_size),(size_t*)(_actual_word_size));
+		  *_result_word = r->allocate(_desired_word_size);
+
+		  if (*_result_word != NULL)
+		  {
+			*_result_region = r;
+			  return true;
+		  }
+	  }
+    return false;
+  }
+};
+
+
+inline HeapWord*
+G1CollectedHeap::find_time_region_and_try_allocate(HeapRegion** region,size_t min_word_size,size_t desired_word_size,size_t* actual_word_size, unsigned long time) {
+
+	HeapWord* result;
+	result = NULL;
+	*region = NULL;
+	FindTimeRegionAndTryAllocateClosure closure(time,min_word_size,desired_word_size,actual_word_size,&result,region);
+	heap_region_iterate(&closure);
+
+
+	return result;
+}
+
 #endif // SHARE_VM_GC_G1_G1COLLECTEDHEAP_INLINE_HPP

@@ -199,6 +199,13 @@ public:
              size_t desired_word_size = 0,
              size_t actual_word_size = 0,
              HeapWord* result = NULL) PRODUCT_RETURN;
+
+public: //cgmin region
+  void set_start_time(unsigned long time);
+  void set_end_time(unsigned long time);
+  void add_gc_time(unsigned long time);
+  unsigned long get_start_time();
+  unsigned long get_end_time();
 };
 
 class MutatorAllocRegion : public G1AllocRegion {
@@ -279,6 +286,18 @@ public:
   // last card in the retained old gc alloc region, and allocation threads
   // allocating into that card at the same time.
   virtual HeapRegion* release();
+};
+
+class TimeGCAllocRegion : public G1GCAllocRegion { //cgmin region
+	public:
+	TimeGCAllocRegion(G1EvacStats* stats=NULL) // ????
+	: G1GCAllocRegion("Time GC Alloc Region",false,stats,InCSetState::Young) {} //young?
+
+	public:
+//	unsigned long min_time,max_time;
+//	HeapRegion* allocate_new_region(size_t word_size, bool force); // need time region
+
+	HeapRegion* allocate_existing_time_region(size_t word_size,unsigned long time);
 };
 
 #endif // SHARE_VM_GC_G1_G1ALLOCREGION_HPP

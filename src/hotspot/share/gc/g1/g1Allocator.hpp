@@ -57,6 +57,9 @@ private:
 
   HeapRegion* _retained_old_gc_alloc_region;
 
+TimeGCAllocRegion *time_alloc_region_list[2048]; // cgmin region need max value
+int tarlc;
+
   bool survivor_is_full() const;
   bool old_is_full() const;
 
@@ -81,6 +84,12 @@ private:
   HeapWord* old_attempt_allocation(size_t min_word_size,
                                           size_t desired_word_size,
                                           size_t* actual_word_size);
+
+HeapWord* time_attempt_allocation(size_t min_word_size,
+		size_t desired_word_size,
+		size_t* actual_word_size,
+		unsigned long time); //cgmin region
+
 public:
   G1Allocator(G1CollectedHeap* heap);
 
