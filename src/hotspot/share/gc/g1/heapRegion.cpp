@@ -883,3 +883,61 @@ void G1ContiguousSpace::initialize(MemRegion mr, bool clear_space, bool mangle_s
   set_saved_mark_word(NULL);
   reset_bot();
 }
+
+//cgmin
+HeapWord* HeapRegion::region_plab_allocate(int allocator_id,size_t word_sz)
+{
+	PLAB* plab = &plab_list[allocator_id];
+	HeapWord* result;
+
+
+
+
+//	if (plab_list[allocator_id] != NULL)
+//	{
+//		plab = plab_list[allocator_id];
+		result = plab->allocate(word_sz);
+		if (result != NULL)
+			return result;
+//	}
+	//Need New Plab
+	//need retire?
+	
+//	if (plab_list[allocator_id] != NULL)
+		plab_list[allocator_id]->retire();
+
+	size_t min_word_size = PLAB::size_requried_for_allocation(word_sz);
+	size_t desired_word_size = _g1h->desired_plab_sz(dest); // no dest
+	size_t actual_word_size;
+	HeapWord* new_plab;
+
+//  if (!_bot_updates) { // survivor bot false
+//    new_plab = /*alloc_region->*/par_allocate_no_bot_updates(min_word_size, desired_word_size, &actual_word_size);
+//  } else {
+
+// we need bot because of remset
+
+      new_plab = /*alloc_region->*/par_allocate(min_word_size, desired_word_size, &actual_word_size);
+
+//    return /*alloc_region->*/par_allocate(min_word_size, desired_word_size, actual_word_size);
+//  }
+
+    if (new_plab == NULL)
+	    return NULL; //no space in this region
+   
+    //dirty young block - card table write barrier
+    /*
+    if (result != NULL) {
+    _g1h->dirty_young_block(result, *actual_word_size);
+  }
+  */
+    plab->set_buf(new_plab,actual_word_size);
+    result = plab->allocate(word_sz);
+
+    if (result == NULL)
+	    printf("new plab full???\n");
+
+	return NULL; // no space in this region
+}
+
+

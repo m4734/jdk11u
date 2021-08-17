@@ -152,4 +152,8 @@ inline HeapWord* TimeAllocRegion::allocate_existing_time_region(size_t word_size
 
 }
 */
+HeapWord TimeGCAllocRegion::allocate_new_region()
+{
+	return NULL;
+}
 #endif // SHARE_VM_GC_G1_G1ALLOCREGION_INLINE_HPP

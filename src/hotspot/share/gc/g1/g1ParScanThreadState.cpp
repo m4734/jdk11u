@@ -221,20 +221,48 @@ oop G1ParScanThreadState::copy_to_survivor_space(InCSetState const state,
   assert( (from_region->is_young() && young_index >  0) ||
          (!from_region->is_young() && young_index == 0), "invariant" );
 
-  uint age = 0;
-  InCSetState dest_state = next_state(state, old_mark, age);
+  uint age = 0; //cgmin don't use age
+
+  InCSetState dest_state = next_state(state, old_mark, age); //cgmin doesn't use it
+
+//  int target_region_group = Universe::gd.get_target_region_group(old); //cgmin region
+/*
+
   // The second clause is to prevent premature evacuation failure in case there
   // is still space in survivor, but old gen is full.
   if (_old_gen_is_full && dest_state.is_old()) {
     return handle_evacuation_failure_par(old, old_mark);
   }
-  HeapWord* obj_ptr = _plab_allocator->plab_allocate(dest_state, word_sz);
+  
+//cgmin doesn't use old
 
+  */
+
+
+  //allocator - region PLAB???
+
+//oop to unique id
+  //unique id to region
+  //find region PLAB (or alloc new)
+  //PLAB alloc
+
+
+  int scid = Universe::gd.oopToUniqueId(old);
+
+//  HeapRegion* region = _g1h->region_at(dst_region);
+//  PLAB* plab = region->plab_for_allocator(
+
+//  HeapWord* obj_ptr = _plab_allocator->plab_allocate(dest_state, word_sz);
+//  HeapWord* obj_ptr = _plab_allocator->plab_allocate(target_region_group , word_sz);
+
+  HeapWord* obj_ptr = _plab_allocator->plab_allocate(scid,word_sz);
+
+/*
   // PLAB allocations should succeed most of the time, so we'll
   // normally check against NULL once and that's it.
   if (obj_ptr == NULL) {
     bool plab_refill_failed = false;
-    obj_ptr = _plab_allocator->allocate_direct_or_new_plab(dest_state, word_sz, &plab_refill_failed);
+    obj_ptr = _plab_allocator->allocate_direct_or_new_plab(target_region_group, dest_state, word_sz, &plab_refill_failed);
     if (obj_ptr == NULL) {
       obj_ptr = allocate_in_next_plab(state, &dest_state, word_sz, plab_refill_failed);
       if (obj_ptr == NULL) {
@@ -248,7 +276,7 @@ oop G1ParScanThreadState::copy_to_survivor_space(InCSetState const state,
       report_promotion_event(dest_state, old, word_sz, age, obj_ptr);
     }
   }
-
+*/
   assert(obj_ptr != NULL, "when we get here, allocation should have succeeded");
   assert(_g1h->is_in_reserved(obj_ptr), "Allocated memory should be in the heap");
 
@@ -270,7 +298,7 @@ oop G1ParScanThreadState::copy_to_survivor_space(InCSetState const state,
   if (forward_ptr == NULL) {
     Copy::aligned_disjoint_words((HeapWord*) old, obj_ptr, word_sz);
 
-    if (dest_state.is_young()) {
+    if (false && dest_state.is_young()) { //cgmin no age
       if (age < markOopDesc::max_age) {
         age++;
       }

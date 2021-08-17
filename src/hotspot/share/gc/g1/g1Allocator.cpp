@@ -175,10 +175,11 @@ HeapWord* G1Allocator::par_allocate_during_gc(InCSetState dest,
   return result;
 }
 
-HeapWord* G1Allocator::par_allocate_during_gc(InCSetState dest,
+HeapWord* G1Allocator::par_allocate_during_gc(/*int target_region_group*/InCSetState dest,
                                               size_t min_word_size,
                                               size_t desired_word_size,
                                               size_t* actual_word_size) {
+//	return time_attempt_allocation(target_region_group,min_word_size,desired_word_size,actural_word_size);
   switch (dest.value()) {
     case InCSetState::Young:
       return survivor_attempt_allocation(min_word_size, desired_word_size, actual_word_size);
@@ -186,8 +187,41 @@ HeapWord* G1Allocator::par_allocate_during_gc(InCSetState dest,
       return old_attempt_allocation(min_word_size, desired_word_size, actual_word_size);
     default:
       ShouldNotReachHere();
-      return NULL; // Keep some compilers happy
+    return NULL; // Keep some compilers happy
   }
+}
+
+HeapWord* G1Allocator::time_attempt_allocation(int target_region_group,size_t min_word_size,
+                                                   size_t desired_word_size,
+                                                   size_t* actual_word_size) { //cgmin region
+  assert(!_g1h->is_humongous(desired_word_size),
+         "we should not be seeing humongous-size allocations in this path");
+/*
+  HeapWord* result = survivor_gc_alloc_region()->attempt_allocation(min_word_size,
+                                                                    desired_word_size,
+                                                                    actual_word_size);
+								    */
+
+HeapWord* result = _time_gc_alloc_region[target_region_group]->attempt_allocation(min_word_size,desired_word_size,actual_word_size);
+
+  if (result == NULL/* && !survivor_is_full()*/) {
+    MutexLockerEx x(FreeList_lock, Mutex::_no_safepoint_check_flag);
+    /*
+    result = survivor_gc_alloc_region()->attempt_allocation_locked(min_word_size,
+                                                                   desired_word_size,
+                                                                   actual_word_size);
+								   */
+    result = _time_gc_alloc_region[target_region_group]->attempt_allocation_locked(min_word_size,desired_word_size,actual_word_size);
+    /*
+    if (result == NULL) {
+      set_survivor_full();
+    }
+    */
+  }
+  if (result != NULL) {
+    _g1h->dirty_young_block(result, *actual_word_size);
+  }
+  return result;
 }
 
 HeapWord* G1Allocator::survivor_attempt_allocation(size_t min_word_size,
@@ -234,7 +268,7 @@ HeapWord* G1Allocator::old_attempt_allocation(size_t min_word_size,
   }
   return result;
 }
-
+#if 0
 HeapWord* G1Allocator::time_attempt_allocation(size_t min_word_size,
                                                    size_t desired_word_size,
                                                    size_t* actual_word_size, unsigned long time) { //cgmin region
@@ -333,7 +367,7 @@ FreeHeap(time_alloc_region_list[tarlc]);
   return result;
   */
 }
-
+#endif
 
 uint G1PLABAllocator::calc_survivor_alignment_bytes() {
   assert(SurvivorAlignmentInBytes >= ObjectAlignmentInBytes, "sanity");
@@ -365,7 +399,7 @@ bool G1PLABAllocator::may_throw_away_buffer(size_t const allocation_word_sz, siz
   return (allocation_word_sz * 100 < buffer_size * ParallelGCBufferWastePct);
 }
 
-HeapWord* G1PLABAllocator::allocate_direct_or_new_plab(InCSetState dest,
+HeapWord* G1PLABAllocator::allocate_direct_or_new_plab(/*int target_region_group,*/InCSetState dest, //cgmin region
                                                        size_t word_sz,
                                                        bool* plab_refill_failed) {
   size_t plab_word_size = _g1h->desired_plab_sz(dest);
@@ -376,11 +410,12 @@ HeapWord* G1PLABAllocator::allocate_direct_or_new_plab(InCSetState dest,
   if ((required_in_plab <= plab_word_size) &&
     may_throw_away_buffer(required_in_plab, plab_word_size)) {
 
-    PLAB* alloc_buf = alloc_buffer(dest);
-    alloc_buf->retire();
+    PLAB* alloc_buf = alloc_buffer(/*target_region_group*/dest);
+    if (alloc_buf != NULL)
+	    alloc_buf->retire();
 
     size_t actual_plab_size = 0;
-    HeapWord* buf = _allocator->par_allocate_during_gc(dest,
+    HeapWord* buf = _allocator->par_allocate_during_gc(/*target_region_group*/dest,
                                                        required_in_plab,
                                                        plab_word_size,
                                                        &actual_plab_size);

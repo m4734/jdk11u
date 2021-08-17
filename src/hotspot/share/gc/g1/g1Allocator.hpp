@@ -57,8 +57,10 @@ private:
 
   HeapRegion* _retained_old_gc_alloc_region;
 
-TimeGCAllocRegion *time_alloc_region_list[2048]; // cgmin region need max value
-int tarlc;
+//TimeGCAllocRegion *time_alloc_region_list[2048]; //cgmin region need max value
+//int tarlc;
+
+TimeGCAllocRegion _time_gc_alloc_region; //cgmin region group max num
 
   bool survivor_is_full() const;
   bool old_is_full() const;
@@ -135,13 +137,25 @@ public:
 // statistics.
 class G1PLABAllocator : public CHeapObj<mtGC> {
   friend class G1ParScanThreadState;
+
+//	public:
+//  G1PLABAllocator() : max_region_group(100) {} //cgmin temp
+
 private:
   G1CollectedHeap* _g1h;
   G1Allocator* _allocator;
 
+int alloator_id;
+
   PLAB  _surviving_alloc_buffer;
   PLAB  _tenured_alloc_buffer;
   PLAB* _alloc_buffers[InCSetState::Num];
+
+
+
+//  int max_region_group;
+//  PLAB* fast_alloc_buffers[100]; //cgmin temp
+  PLAB* alloc_buffer[2048];
 
   // The survivor alignment in effect in bytes.
   // == 0 : don't align survivors

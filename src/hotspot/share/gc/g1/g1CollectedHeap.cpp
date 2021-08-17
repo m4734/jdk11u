@@ -2969,7 +2969,7 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         pre_evacuate_collection_set();
 
         // Actually do the work...
-        evacuate_collection_set(&per_thread_states);
+        evacuate_collection_set(&per_thread_states); //cgmin gc minor start
 
         post_evacuate_collection_set(evacuation_info, &per_thread_states);
 

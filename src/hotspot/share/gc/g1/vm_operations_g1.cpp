@@ -129,7 +129,7 @@ void VM_G1CollectForAllocation::doit() {
   }
 
   // Try a partial collection of some kind.
-  _pause_succeeded = g1h->do_collection_pause_at_safepoint(_target_pause_time_ms);
+  _pause_succeeded = g1h->do_collection_pause_at_safepoint(_target_pause_time_ms); //cgmin gc partial?
 
   if (_pause_succeeded) {
     if (_word_size > 0) {

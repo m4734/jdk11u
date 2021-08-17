@@ -294,10 +294,11 @@ class TimeGCAllocRegion : public G1GCAllocRegion { //cgmin region
 	: G1GCAllocRegion("Time GC Alloc Region",false,stats,InCSetState::Young) {} //young?
 
 	public:
-//	unsigned long min_time,max_time;
-//	HeapRegion* allocate_new_region(size_t word_size, bool force); // need time region
+//	unsigned long min_time,max_time
+	HeapRegion* allocate_new_region(size_t word_size, bool force); // need time region
 
-	HeapRegion* allocate_existing_time_region(size_t word_size,unsigned long time);
+//	HeapRegion* allocate_existing_time_region(size_t word_size,unsigned long time);
+
 };
 
 #endif // SHARE_VM_GC_G1_G1ALLOCREGION_HPP

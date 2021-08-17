@@ -62,23 +62,83 @@ inline HeapWord* G1Allocator::attempt_allocation_force(size_t word_size) {
   return mutator_alloc_region()->attempt_allocation_force(word_size);
 }
 
-inline PLAB* G1PLABAllocator::alloc_buffer(InCSetState dest) {
+inline PLAB* G1PLABAllocator::alloc_buffer(/*int target_region_group*/InCSetState dest) { //cgmin region // rollback
   assert(dest.is_valid(),
          "Allocation buffer index out of bounds: " CSETSTATE_FORMAT, dest.value());
   assert(_alloc_buffers[dest.value()] != NULL,
          "Allocation buffer is NULL: " CSETSTATE_FORMAT, dest.value());
   return _alloc_buffers[dest.value()];
+/*
+	if (target_region_group >= max_region_group || _alloc_buffer[target_region_group] == NULL)
+		return NULL;
+return _alloc_buffer[target_region_group];
+*/
 }
-
-inline HeapWord* G1PLABAllocator::plab_allocate(InCSetState dest,
+#if 1
+inline HeapWord* G1PLABAllocator::plab_allocate(/*int target_region_group,*/ InCSetState dest, //cgmin region
                                                 size_t word_sz) {
   PLAB* buffer = alloc_buffer(dest);
+//	PLAB* buffer = alloc_buffer(target_region_group);
+//	if (target_region_group >= max_region_group || _alloc_buffer[target_region_group] == NULL)
+//		return NULL;
+//	PLAB* buffer = _alloc_buffer[target_region_group];
+	/*
+	PLAB* buffer = alloc_buffer(target_region_group);
+	if (buffer == NULL)
+		return NULL;
+		*/
   if (_survivor_alignment_bytes == 0 || !dest.is_young()) {
     return buffer->allocate(word_sz);
   } else {
     return buffer->allocate_aligned(word_sz, _survivor_alignment_bytes);
   }
 }
+#endif
+
+inline HeapWord* G1PLABAllocator::plab_allocate(int scid,size_t word_sz)
+{
+
+	// scid to region
+	// if there is no region find new region (repeat)
+	// region to plab
+	// if there is no plab alloc new plab
+	// if there is no space in region find new region
+	// plab alloc
+	// if there is no space in plab alloc new plab
+	// if there is no space in region find new region
+	
+
+
+
+HeapWord* result = NULL;
+	int dst_region = -1;// = Universe::gd.scidToDstRegion(scid); // include NULL case handle
+	HeapRegion* region;// = _g1h->region_at(dst_region);
+//	PLAB* plab;// = region->plab_for_allocator(allocator_id);
+while(result == NULL)
+{
+//	while (plab == NULL) //there is no plab for allocator and can't alloc new
+//	{
+		Universe::gd.regionFull(dst_region); // when dst_region is -1 do nothing
+		dst_region = Universe::gd.scid_to_dst_region(scid);
+		if (dst_region < 0) // OOM
+			return NULL;
+		region = _g1h->region_at(dst_region);
+//		 plab = region->plab_for_allocator(allocator_id);
+		result = region->region_plab_allocate(allocator_id,word_sz);
+//	}
+
+
+//  if (_survivor_alignment_bytes == 0/* || !dest.is_young()*/) {
+//    result = plab->allocate(word_sz);
+//  } else {
+//    result = plab->allocate_aligned(word_sz, _survivor_alignment_bytes);
+//  }
+}
+
+
+  return result;
+}
+
 
 inline HeapWord* G1PLABAllocator::allocate(InCSetState dest,
                                            size_t word_sz,

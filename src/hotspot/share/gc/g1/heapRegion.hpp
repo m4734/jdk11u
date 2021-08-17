@@ -64,6 +64,8 @@ class HeapRegion;
 class HeapRegionSetBase;
 class nmethod;
 
+#define THREAD_NUM 32 //cgmin
+
 #define HR_FORMAT "%u:(%s)[" PTR_FORMAT "," PTR_FORMAT "," PTR_FORMAT "]"
 #define HR_FORMAT_PARAMS(_hr_) \
                 (_hr_)->hrm_index(), \
@@ -705,6 +707,8 @@ class HeapRegion: public G1ContiguousSpace {
   //end = region die
   //gc = sum of gc time
   //end + gc - start
+  PLAB plab_list[THREAD_NUM];
+  HeapWord* region_plab_allocate(int allocator_id,size_t word_sz);
 };
 
 // HeapRegionClosure is used for iterating over regions.
